@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "mci-gateway"
+version = "0.1.0"
+description = "MCI Smart Parking Python Script Gateway Data Collector"
+authors = ["Asncodes-80 <asn80.asn@hotmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pymongo = "^4.10.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
