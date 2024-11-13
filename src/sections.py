@@ -96,13 +96,13 @@ class AppSections:
                     try:
                         response: str = client.recv(1024).hex()
                         if response[12:14] == "00":  # Slot is free
-                            sensor_status_update(
+                            self.sensor_status_update(
                                 0,
                                 str(response[:2]),
                                 Building(self.building_name, floor),
                             )
                         elif response[12:14] == "01":  # Slot is occupied
-                            sensor_status_update(
+                            self.sensor_status_update(
                                 1,
                                 str(response[:2]),
                                 Building(self.building_name, floor),
