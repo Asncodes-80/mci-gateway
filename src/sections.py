@@ -92,7 +92,9 @@ class AppSections:
                 for _ in range(sensors_count):
                     sensor_id: str = sensors.next()["id"]
                     # Sensor read command in HEX format
-                    client.send(f"{sensor_id}{config["SENSOR_READ_CMD"]}".encode())
+                    client.send(
+                        f"{sensor_id}{config["client_commands"]["sensor_read"]}".encode()
+                    )
                     try:
                         response: str = client.recv(1024).hex()
                         if response[12:14] == "00":  # Slot is free

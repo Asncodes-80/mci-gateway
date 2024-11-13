@@ -1,5 +1,25 @@
 config: dict = {
-    "SENSOR_READ_CMD": "03000A0005",
-    "buildings": ["vanak", "huawei", "setareh"],
-    "options": {"--ip": "-i", "--port": "-p", "--section": "-s"},
+    "client_commands": {
+        "sensor_read": "03000A0005",
+        "barrier": {
+            "read": "",
+            "open": "",
+        },
+    },
+    "buildings": [
+        "vanak",
+        "huawei",
+        "setareh",
+    ],
+    "options": {
+        "--ip": "-i",
+        "--port": "-p",
+        "--section": "-s",
+    },
+    "mq": {
+        "user": "admin",
+        "password": "admin",
+        "host": "localhost",
+        "port": 5672,
+    },
 }
