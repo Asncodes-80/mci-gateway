@@ -49,11 +49,12 @@ class RabbitMQ:
         )
         self.channel.start_consuming()
 
-    def produce(self, queue_name: str, message: dict):
+    def produce(self, queue_name: str, routing_key: str, message: dict):
         """Produce and Publish Data to Streamline.
 
         Args:
             queue_name (str): Topic name
+            routing_key (str): Defines route of logs
             message (dict): main context
 
         Raises:
@@ -65,7 +66,7 @@ class RabbitMQ:
         self.channel.queue_declare(queue=queue_name, durable=True)
         self.channel.basic_publish(
             exchange="",
-            routing_key=queue_name,
+            routing_key=routing_key,
             body=json.dumps(message, indent=2).encode("utf-8"),
             properties=pika.BasicProperties(delivery_mode=2),
         )

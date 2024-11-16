@@ -51,6 +51,8 @@ if __name__ == "__main__":
             app_section = AppSections(args.ip, args.port, building)
             match args.section:
                 case "sensors":
+                    app_section.queue_name = "system-logs"
+                    app_section.queue_route = "ultra_sonic"
                     app_section.sensor_data_collector()
                 case "barriers":
                     print("Performing barriers application section")

@@ -3,6 +3,7 @@ import socket, time
 from pymongo import MongoClient
 
 from config import config
+from data import mq
 
 
 connection_string = MongoClient("mongodb://localhost:27017/MCI_CPR_DB")
@@ -22,14 +23,31 @@ class AppSections:
     ip: str
     port: str
     building: str
+    message_queue = mq.RabbitMQ()
+    queue_name: str
+    queue_route: str
 
-    def __init__(self, ip, port, building):
+    def __init__(
+        self,
+        ip,
+        port,
+        building,
+        queue_name,
+        queue_route,
+    ):
         self.ip = ip
         self.port = port
         self.building = building
+        self.queue_name = queue_name
+        self.queue_route = queue_route
 
     # TODO: Remove the following method and create a class for MQ broker
-    def sensor_status_update(status: str, sensor_id: str, building: Building):
+    def sensor_status_update(
+        self,
+        status: str,
+        sensor_id: str,
+        building: Building,
+    ):
         """Updating slot in the database (Rabbit is Here).
 
         Args:
@@ -37,14 +55,24 @@ class AppSections:
             sensor_id (str): Finds sensor by id to change its `real_status`.
             building (Building): Building information.
         """
-        conn.Slot.update_many(
-            {
+        # conn.Slot.update_many(
+        #     {
+        #         "id": sensor_id,
+        #         "floor": building.floor,
+        #         "building": building.name,
+        #     },
+        #     {"$set": {"real_status": status}},
+        # )
+        self.message_queue.produce(
+            self.queue_name,
+            self.queue_route,
+            message={
                 "id": sensor_id,
-                "floor": building.floor,
-                "building": building.name,
+                "status": status,
+                "address": self.ip,
             },
-            {"$set": {"real_status": status}},
         )
+        self.message_queue.close()
 
     def sensor_data_collector(self):
         """Sensor Data Collection
