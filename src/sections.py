@@ -6,10 +6,6 @@ from config import config
 from data import mq
 
 
-connection_string = MongoClient("mongodb://localhost:27017/MCI_CPR_DB")
-conn = connection_string.MCI_CPR_DB
-
-
 class Building:
     name: str
     floor: int
@@ -21,25 +17,27 @@ class Building:
 
 class AppSections:
     ip: str
-    port: str
+    port: int
     building: str
-    message_queue = mq.RabbitMQ()
+    message_queue = None
     queue_name: str
     queue_route: str
+    connection_string = None
+    conn = None
 
     def __init__(
         self,
         ip,
         port,
         building,
-        queue_name,
-        queue_route,
     ):
         self.ip = ip
         self.port = port
         self.building = building
-        self.queue_name = queue_name
-        self.queue_route = queue_route
+
+        self.connection_string = MongoClient("mongodb://localhost:27017/MCI_CPR_DB")
+        self.conn = self.connection_string.MCI_CPR_DB
+        self.message_queue = mq.RabbitMQ()
 
     # TODO: Remove the following method and create a class for MQ broker
     def sensor_status_update(
@@ -104,16 +102,16 @@ class AppSections:
                 client.connect((self.ip, self.port))
                 client.settimeout(2)
 
-                gateway = conn.GateWay.find_one(
+                gateway = self.conn.GateWay.find_one(
                     {"building": self.building, "Status": 1, "ip": self.ip}
                 )
                 # Select a gateway by ip address and get its floor
                 floor: int = gateway["floor"]
                 # Sensors list that exists in a specific floor
-                sensors = conn.Slot.find(
+                sensors = self.conn.Slot.find(
                     {"building": self.building, "floor": floor}, sort=[("id", 1)]
                 )
-                sensors_count = conn.Slot.count_documents(
+                sensors_count = self.conn.Slot.count_documents(
                     {"building": self.building, "floor": floor}
                 )
 
@@ -143,5 +141,5 @@ class AppSections:
                         print("TimeOut: Next Sensor")
                         continue
                 client.close()
-            except Exception as e:
-                print(f"exception")
+            except socket.timeout:
+                print("Socket timeout")

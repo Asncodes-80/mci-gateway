@@ -6,6 +6,11 @@ config: dict = {
             "open": "",
         },
     },
+    "sections": [
+        "sensors",
+        "barriers",
+        "rfid",
+    ],
     "buildings": [
         "vanak",
         "huawei",

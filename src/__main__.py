@@ -5,11 +5,16 @@
 
 # Log Table
 
-| Type     | Group            | Description                         |
-|----------|------------------|-------------------------------------|
-| NoneType |   Network        | Network is Unreachable              |
-| NoneType |   Implementation | Object is not subscriptable         |
-| Timeout  |   Exception      | [Error 104] Connection reset by peer|
+| Type             | Group                  | Description                                                                 |
+|------------------|------------------------|-----------------------------------------------------------------------------|
+| NoneType         | Network                | Network is Unreachable                                                      |
+| NoneType         | Implementation         | Object is not subscriptable                                                 |
+| Timeout          | RabbitMQ               | RabbitMQ connection timeout                                                 |
+| Timeout          | Socket                 | [Error 104] Connection reset by peer                                        |
+| CLI Input        | User mode              | Unknown section                                                             |
+| CLI Input        | User mode              | You must enter building number between 1 to {len(config["buildings"])}"     |
+| Connection Error | Service mode           | [AMQPConnectionError]: Please check server configurations. Connection error |
+| Connection Error | Service mode           | [AMQPChannelError]: Wrong Configurations. Fix RabbitMQ Channel.             |
 """
 
 import argparse, sys
@@ -32,31 +37,38 @@ if __name__ == "__main__":
             parser.add_argument(value, key)
         args = parser.parse_args()
 
-        print("Enter building name from the following list:")
-        for index, building_name in enumerate(config["buildings"]):
-            print(f"{index + 1}) {building_name}")
-        building: str = input("Building name: ")
-
-        if (
-            building == None
-            or args.ip == None
-            or args.port == None
-            or args.section == None
-            or building_name == ""
-        ):
+        if args.ip == None or args.port == None or args.section == None:
             print(
-                "Bad input!\nPlease enter valid ip address, port number, application section, and a specific building name"
+                "[INPUT]: Please enter valid ip address, port number, and an application section"
             )
         else:
-            app_section = AppSections(args.ip, args.port, building)
-            match args.section:
-                case "sensors":
-                    app_section.queue_name = "system-logs"
-                    app_section.queue_route = "ultra_sonic"
-                    app_section.sensor_data_collector()
-                case "barriers":
-                    print("Performing barriers application section")
-                case "rfid":
-                    print("Performing rfid application section")
+            print("Enter building name from the following list:")
+
+            for index, building_name in enumerate(config["buildings"]):
+                print(f"{index + 1}) {building_name}")
+
+            building: int = int(input("Building name: "))
+
+            if building < 0 or building > len(config["buildings"]):
+                print(
+                    f"[INPUT]: You must enter building number between 1 to {len(config["buildings"])}"
+                )
+            else:
+                app_section = AppSections(
+                    args.ip,
+                    int(args.port),
+                    config["buildings"][building - 1],
+                )
+                match args.section:
+                    case "sensors":
+                        app_section.queue_name = "system-logs"
+                        app_section.queue_route = "ultra_sonic"
+                        app_section.sensor_data_collector()
+                    case "barriers":
+                        print("Performing barriers application section.")
+                    case "rfid":
+                        print("Performing rfid application section.")
+                    case _:
+                        print("[INPUT]: Unknown section")
     except KeyboardInterrupt:
         sys.exit(0)

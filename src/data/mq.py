@@ -1,6 +1,7 @@
 import json
 
 import pika
+from pika.exceptions import AMQPChannelError, AMQPConnectionError, AMQPError
 
 from config import config
 
@@ -17,12 +18,23 @@ class RabbitMQ:
 
     def connect(self):
         """Open the RabbitMQ Connection."""
-        credentials = pika.PlainCredentials(self.user, self.password)
-        parameters = pika.ConnectionParameters(
-            host=self.host, port=self.port, credentials=credentials
-        )
-        self.connection = pika.BlockingConnection(parameters)
-        self.channel = self.connection.channel()
+        try:
+            credentials = pika.PlainCredentials(self.user, self.password)
+            parameters = pika.ConnectionParameters(
+                host=self.host, port=self.port, credentials=credentials
+            )
+            self.connection = pika.BlockingConnection(parameters)
+            self.channel = self.connection.channel()
+        except AMQPConnectionError:
+            print(
+                "[AMQPConnectionError]: Please check server configurations. Connection error"
+            )
+        except AMQPChannelError:
+            print("[AMQPChannelError]: Wrong Configurations. Fix RabbitMQ Channel.")
+        except TimeoutError:
+            print("[Timeout]: RabbitMQ connection timeout")
+        except Exception as e:
+            print(f"Unknown error\n{e}")
 
     def close(self):
         """Close the RabbitMQ."""
