@@ -21,6 +21,7 @@
 import argparse, sys
 
 from config import config
+
 from sections import AppSections
 
 
@@ -65,8 +66,8 @@ if __name__ == "__main__":
                         app_section.queue_name = "logs"
                         app_section.queue_route = "logs.utlrasonic-sensors"
                         app_section.sensor_data_collector()
-                    case "barriers":
-                        print("Performing barriers application section.")
+                    case "barrier":
+                        print("Performing barrier application section.")
                     case "rfid":
                         print("Performing rfid application section.")
                     case _:
