@@ -15,6 +15,7 @@
 | CLI Input        | User mode              | You must enter building number between 1 to {len(config["buildings"])}"     |
 | Connection Error | Service mode           | [AMQPConnectionError]: Please check server configurations. Connection error |
 | Connection Error | Service mode           | [AMQPChannelError]: Wrong Configurations. Fix RabbitMQ Channel.             |
+| Connection Error | Service mode           | RabbitMQ Connection Error                                                   |
 """
 
 import argparse, sys
@@ -61,8 +62,8 @@ if __name__ == "__main__":
                 )
                 match args.section:
                     case "sensors":
-                        app_section.queue_name = "system-logs"
-                        app_section.queue_route = "ultra_sonic"
+                        app_section.queue_name = "logs"
+                        app_section.queue_route = "logs.utlrasonic-sensors"
                         app_section.sensor_data_collector()
                     case "barriers":
                         print("Performing barriers application section.")
@@ -71,4 +72,6 @@ if __name__ == "__main__":
                     case _:
                         print("[INPUT]: Unknown section")
     except KeyboardInterrupt:
+        # Close the broker with specific `exchange` and `queue_name`
+        app_section.message_broker.close()
         sys.exit(0)

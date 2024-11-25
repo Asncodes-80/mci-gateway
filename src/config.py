@@ -22,9 +22,9 @@ config: dict = {
         "--section": "-s",
     },
     "mq": {
-        "user": "admin",
-        "password": "admin",
-        "host": "localhost",
+        "user": "message_broker",
+        "password": "1234",
+        "host": "127.0.0.1",
         "port": 5672,
     },
 }

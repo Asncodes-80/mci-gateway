@@ -1,7 +1,12 @@
-import json
+import json, sys
 
 import pika
-from pika.exceptions import AMQPChannelError, AMQPConnectionError, AMQPError
+from pika.exceptions import (
+    AMQPChannelError,
+    AMQPConnectionError,
+    AuthenticationError,
+    ChannelWrongStateError,
+)
 
 from config import config
 
@@ -25,6 +30,8 @@ class RabbitMQ:
             )
             self.connection = pika.BlockingConnection(parameters)
             self.channel = self.connection.channel()
+        except AuthenticationError as auth_error:
+            print(f"[AMQPAUTHENTICATION]: Client auth failed. {auth_error}")
         except AMQPConnectionError:
             print(
                 "[AMQPConnectionError]: Please check server configurations. Connection error"
@@ -35,31 +42,13 @@ class RabbitMQ:
             print("[Timeout]: RabbitMQ connection timeout")
         except Exception as e:
             print(f"Unknown error\n{e}")
+        finally:
+            sys.exit(0)
 
     def close(self):
         """Close the RabbitMQ."""
         if self.connection and not self.connection.is_closed:
             self.connection.close()
-
-    def consume(self, queue_name: str, callback):
-        """Consume and Listen for Latest Data.
-
-        Args:
-            queue_name (str): Topic name
-            callback (function): Stream response
-
-        Raises:
-            Exception: Connect error.
-        """
-        if not self.channel:
-            raise Exception("Connection is not established!")
-
-        self.channel.basic_consume(
-            queue=queue_name,
-            on_message_callback=callback,
-            auto_ack=True,
-        )
-        self.channel.start_consuming()
 
     def produce(self, queue_name: str, routing_key: str, message: dict):
         """Produce and Publish Data to Streamline.
@@ -75,11 +64,21 @@ class RabbitMQ:
         if not self.channel:
             raise Exception("Connection is not established!")
 
-        self.channel.queue_declare(queue=queue_name, durable=True)
-        self.channel.basic_publish(
-            exchange="",
-            routing_key=routing_key,
-            body=json.dumps(message, indent=2).encode("utf-8"),
-            properties=pika.BasicProperties(delivery_mode=2),
-        )
-        print(f"Send message to queue {queue_name}: {message}")
+        try:
+            self.channel.queue_declare(queue=queue_name, durable=True)
+            self.channel.queue_bind(
+                exchange="system-logs",
+                queue=queue_name,
+                routing_key=routing_key,
+            )
+            self.channel.basic_publish(
+                exchange="system-logs",
+                routing_key=routing_key,
+                body=json.dumps(message, indent=2).encode("utf-8"),
+                properties=pika.BasicProperties(delivery_mode=2),
+            )
+            print(f"Send message to queue {queue_name}: {message}")
+        except ChannelWrongStateError as channel_error:
+            print(f"[BROKER]: {channel_error}")
+        except TypeError as channel_blocking_error:
+            print(f"[BROKER]: {channel_blocking_error}")
