@@ -52,7 +52,6 @@ class AppSections:
                     "sensor_id": sensor_id,
                     "status": status,
                     "ip_address": self.ip,
-                    "message": "",
                 },
             ),
         )

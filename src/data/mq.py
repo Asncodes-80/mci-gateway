@@ -1,4 +1,4 @@
-import json, sys
+import json
 
 import pika
 from pika.exceptions import (
@@ -44,8 +44,6 @@ class RabbitMQ:
             print("[Timeout]: RabbitMQ connection timeout")
         except Exception as e:
             print(f"Unknown error\n{e}")
-        finally:
-            sys.exit(0)
 
     def close(self):
         """Close the RabbitMQ."""
@@ -79,7 +77,7 @@ class RabbitMQ:
                 body=json.dumps(message, indent=2).encode("utf-8"),
                 properties=pika.BasicProperties(delivery_mode=2),
             )
-            json.dumps(message, indent=2)
+            print(json.dumps(message, indent=2))
         except ChannelWrongStateError as channel_error:
             print(f"[BROKER]: {channel_error}")
         except TypeError as channel_blocking_error:
@@ -93,13 +91,14 @@ class RabbitMQ:
             data (dict): Main data to stream
         Return: Proper data streams that Laravel can support.
         """
-        command: str = phpSerializer.dumps(
-            {
-                "data": data,
-                "connection": "rabbitmq",
-                "queue": "logs",
-            }
-        )
+        stream: dict = {
+            "data": data,
+            "connection": "rabbitmq",
+            "queue": "logs",
+        }
+
+        command: str = phpSerializer.dumps(stream)
+
         return {
             "uuid": str(uuid.uuid4()),
             "displayName": namespace,
@@ -112,9 +111,11 @@ class RabbitMQ:
             "retryUntil": None,
             "data": {
                 "commandName": namespace,
-                "command": 'O:36:"{ns}":3:{s:42:"\u0000{ns}\u0000data";'.format(
-                    ns=namespace
-                )
+                "command": f'O:36:"{namespace}":'
+                + str(len(stream))
+                + ":{s:"
+                + str(6 + len(namespace))
+                + f':"\u0000{namespace}\u0000data";'
                 + command[16:],
             },
             "id": str(uuid.uuid4()),
