@@ -1,8 +1,7 @@
 import socket, time
 
 from pymongo import MongoClient
-import uuid_utils as uuid
-from phpserialize3 import *
+import phpserialize3 as phpSerializer
 
 from config import config
 from data import mq
@@ -43,43 +42,19 @@ class AppSections:
             status (str): `0` for no car and `1` for occupied.
             sensor_id (str): Finds sensor by id to change its `real_status`.
         """
-        JOB_NAMESPACE: str = "App\\Jobs\\UltrasonicSensors\\SensorLog"
 
-        cmd = (
-            {
-                "__PHP_Incomplete_Class_Name": JOB_NAMESPACE,
-                "data": {
+        self.message_broker.produce(
+            self.queue_name,
+            self.queue_route,
+            message=self.message_broker.laravel_based_messaging(
+                namespace="App\\Jobs\\UltrasonicSensors\\SensorLog",
+                data={
                     "sensor_id": sensor_id,
                     "status": status,
                     "ip_address": self.ip,
                     "message": "",
                 },
-                "connection": "rabbitmq",
-                "queue": "logs",
-            },
-        )
-
-        data: dict = {
-            "uuid": str(uuid.uuid4()),
-            "displayName": JOB_NAMESPACE,
-            "job": "Illuminate\\Queue\\CallQueuedHandler@call",
-            "maxTries": None,
-            "maxExceptions": None,
-            "failOnTimeout": False,
-            "backoff": None,
-            "timeout": None,
-            "retryUntil": None,
-            "data": {
-                "commandName": JOB_NAMESPACE,
-                "command": 'O:36:"App\\Jobs\\UltrasonicSensors\\SensorLog":3:{s:42:"\u0000App\\Jobs\\UltrasonicSensors\\SensorLog\u0000data";a:2:{s:9:"sensor_id";i:123;s:6:"status";b:1;}s:10:"connection";s:8:"rabbitmq";s:5:"queue";s:4:"logs";}',
-            },
-            "id": str(uuid.uuid4()),
-        }
-
-        self.message_broker.produce(
-            self.queue_name,
-            self.queue_route,
-            message=data,
+            ),
         )
 
     def sensor_data_collector(self):

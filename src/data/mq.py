@@ -7,6 +7,8 @@ from pika.exceptions import (
     AuthenticationError,
     ChannelWrongStateError,
 )
+import phpserialize3 as phpSerializer
+import uuid_utils as uuid
 
 from config import config
 
@@ -77,8 +79,43 @@ class RabbitMQ:
                 body=json.dumps(message, indent=2).encode("utf-8"),
                 properties=pika.BasicProperties(delivery_mode=2),
             )
-            print(f"Send message to queue {queue_name}: {message}")
+            json.dumps(message, indent=2)
         except ChannelWrongStateError as channel_error:
             print(f"[BROKER]: {channel_error}")
         except TypeError as channel_blocking_error:
             print(f"[BROKER]: {channel_blocking_error}")
+
+    def laravel_based_messaging(self, namespace: str, data: dict):
+        """Laravel-based Messaging AMQP Format
+
+        Args:
+            namespace (str): Laravel MQ directory namespace
+            data (dict): Main data to stream
+        Return: Proper data streams that Laravel can support.
+        """
+        command: str = phpSerializer.dumps(
+            {
+                "data": data,
+                "connection": "rabbitmq",
+                "queue": "logs",
+            }
+        )
+        return {
+            "uuid": str(uuid.uuid4()),
+            "displayName": namespace,
+            "job": "Illuminate\\Queue\\CallQueuedHandler@call",
+            "maxTries": None,
+            "maxExceptions": None,
+            "failOnTimeout": False,
+            "backoff": None,
+            "timeout": None,
+            "retryUntil": None,
+            "data": {
+                "commandName": namespace,
+                "command": 'O:36:"{ns}":3:{s:42:"\u0000{ns}\u0000data";'.format(
+                    ns=namespace
+                )
+                + command[16:],
+            },
+            "id": str(uuid.uuid4()),
+        }
