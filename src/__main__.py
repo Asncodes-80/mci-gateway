@@ -69,7 +69,7 @@ if __name__ == "__main__":
                     case "sensors":
                         app_section.queue_route = "logs.utlrasonic-sensors"
                         app_section.queue_namespace_provider = (
-                            "App\\Jobs\\UltrasonicSensors\\SensorLog"
+                            "App\Jobs\SystemLogs\UltrasonicSensors\SensorLog"
                         )
 
                         app_section.data_collector(app_section.sensors)
