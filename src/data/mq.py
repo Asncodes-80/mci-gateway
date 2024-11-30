@@ -111,7 +111,7 @@ class RabbitMQ:
             "retryUntil": None,
             "data": {
                 "commandName": namespace,
-                "command": f'O:36:"{namespace}":'
+                "command": f'O:{len(namespace)}:"{namespace}":'
                 + str(len(stream))
                 + ":{s:"
                 + str(6 + len(namespace))
