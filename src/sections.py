@@ -8,26 +8,17 @@ from data import mq
 
 
 class AppSections:
-    ip: str
-    port: int
-    building: str
-    message_broker = None
-    queue_name: str
-    queue_route: str
-    connection_string = None
-    conn = None
-
     def __init__(
         self,
-        ip,
-        port,
-        building,
+        ip: str,
+        port: int,
+        building: str,
     ):
         self.ip = ip
         self.port = port
         self.building = building
 
-        self.connection_string = MongoClient("mongodb://localhost:27017/MCI_PCR_DB")
+        self.connection_string = MongoClient(config["db"]["mongo"]["connection_string"])
         self.conn = self.connection_string.MCI_PCR_DB
         self.message_broker = mq.RabbitMQ()
 
@@ -85,6 +76,7 @@ class AppSections:
                 client: socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client.connect((self.ip, self.port))
                 client.settimeout(2)
+
                 gateway = self.conn.GateWay.find_one(
                     {"building": self.building, "Status": 1, "ip": self.ip}
                 )
