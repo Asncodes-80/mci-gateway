@@ -56,23 +56,32 @@ if __name__ == "__main__":
                     f"[INPUT]: You must enter building number between 1 to {len(config["buildings"])}"
                 )
             else:
+                # Initialized application with proper section, port, and ip
+                # address.
                 app_section = AppSections(
                     args.ip,
                     int(args.port),
                     config["buildings"][building - 1],
+                    queue_name="logs",
                 )
+
                 match args.section:
                     case "sensors":
-                        app_section.queue_name = "logs"
                         app_section.queue_route = "logs.utlrasonic-sensors"
-                        app_section.sensor_data_collector()
+                        app_section.queue_namespace_provider = (
+                            "App\\Jobs\\UltrasonicSensors\\SensorLog"
+                        )
+
+                        app_section.data_collector(app_section.sensors)
                     case "barrier":
+                        # TODO:
                         print("Performing barrier application section.")
                     case "rfid":
+                        # TODO:
                         print("Performing rfid application section.")
                     case _:
                         print("[INPUT]: Unknown section")
     except KeyboardInterrupt:
-        # Close the broker with specific `exchange` and `queue_name`
+        # Close the broker with specific `exchange` and `queue_name`.
         app_section.message_broker.close()
         sys.exit(0)
