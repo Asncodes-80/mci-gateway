@@ -124,7 +124,13 @@ class AppSections:
                 # Sensor is not connect
                 if response[0:2] == "00":
                     self.send_event(
-                        data={"sensor_id": sensor_id, "log": Log.warning.name}
+                        data={
+                            "sensor_id": sensor_id,
+                            "message": {
+                                "level": Log.warning.name,
+                                "content": None,
+                            },
+                        }
                     )
                 else:
                     # Slot is free
@@ -133,6 +139,7 @@ class AppSections:
                             data={
                                 "sensor_id": sensor_id,
                                 "status": False,
+                                "message": None,
                             }
                         )
                     # Slot is occupied
@@ -141,11 +148,12 @@ class AppSections:
                             data={
                                 "sensor_id": sensor_id,
                                 "status": True,
+                                "message": None,
                             }
                         )
 
                 time.sleep(0.8)
             except Exception as db_exception:
-                print(db_exception)
+                print(f"[MONGODB]: {db_exception}")
                 continue
         client.close()
