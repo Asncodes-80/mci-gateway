@@ -1,3 +1,12 @@
+from enum import Enum
+
+
+class Log(Enum):
+    info = "info"
+    warning = "warning"
+    critical = "critical"
+
+
 config: dict = {
     "client_commands": {
         "sensor_read": "03000A0005",

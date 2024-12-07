@@ -2,7 +2,7 @@ import socket, time
 
 from pymongo import MongoClient
 
-from config import config
+from config import config, Log
 from data import mq
 
 
@@ -23,28 +23,28 @@ class AppSections:
         self.conn = self.connection_string.MCI_PCR_DB
         self.message_broker = mq.RabbitMQ()
 
-    def sensor_status_update(
-        self,
-        status: bool,
-        sensor_id: str,
-    ):
-        """Update Slot in the Database.
+    def send_event(self, data: dict):
+        """Send proper event by payload to RabbitMQ.
 
         Args:
-            status (bool): `False` for unavailable car and `True` for occupied.
-            sensor_id (str): Finds sensor by id to change its `real_status`.
+            data (dict): The simple dictionary includes the client IP address
+            and other related data.
         """
+
+        # Final data to send it to RabbitMQ
+        result = {
+            "ip_address": self.ip,
+        }
+
+        for k, v in data.items():
+            result[k] = v
 
         self.message_broker.produce(
             self.queue_name,
             self.queue_route,
             message=self.message_broker.laravel_based_messaging(
                 namespace=self.queue_namespace_provider,
-                data={
-                    "sensor_id": sensor_id,
-                    "status": status,
-                    "ip_address": self.ip,
-                },
+                data=result,
             ),
         )
 
@@ -92,18 +92,12 @@ class AppSections:
         This script sends request to network socket server and request format is
         compound of `sensor_id` and default read sensor command.
 
-        After script got client response form gateway board, at slice of 12:14
+        After script got client response form gateway board, at slice of `12:14`
         we specify that slot is free or occupied:
 
         + 12:14 was equal to `00`: free
         + 12:14 was equal to `01`: occupied
-
-        ## Message Queue Manager
-
-        There are two topics of RabbitMQ:
-
-        + `service_monitoring`: For Optimization and Monitoring (O&M) app
-        + `application`: For client app
+        + 0:2 was equal to `00`: sensor is disconnected
         """
         gateway = self.conn.GateWay.find_one(
             {"building": self.building, "Status": 1, "ip": self.ip}
@@ -127,12 +121,28 @@ class AppSections:
             try:
                 response: str = client.recv(1024).hex()
 
-                # Slot is free
-                if response[12:14] == "00":
-                    self.sensor_status_update(False, response[:2])
-                # Slot is occupied
-                elif response[12:14] == "01":
-                    self.sensor_status_update(True, response[:2])
+                # Sensor is not connect
+                if response[0:2] == "00":
+                    self.send_event(
+                        data={"sensor_id": sensor_id, "log": Log.warning.name}
+                    )
+                else:
+                    # Slot is free
+                    if response[12:14] == "00":
+                        self.send_event(
+                            data={
+                                "sensor_id": sensor_id,
+                                "status": False,
+                            }
+                        )
+                    # Slot is occupied
+                    elif response[12:14] == "01":
+                        self.send_event(
+                            data={
+                                "sensor_id": sensor_id,
+                                "status": True,
+                            }
+                        )
 
                 time.sleep(0.8)
             except Exception as db_exception:

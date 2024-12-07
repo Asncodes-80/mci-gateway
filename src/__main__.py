@@ -3,7 +3,25 @@
 + Every `id` key is related to (str) `sensor_id`
 + (int) `real_status` is related to status of specific sensor -> `sensor_id`.
 
-# Log Table
+## Server Side Log Table
+
++ info: Every data that we send over MQ
++ waning: Minor events like some clients is disconnected.
++ error: Major events like a part of section encounter to fault.
++ critical: Critical events like any inside communications.
+
+## Server-side Logs
+
+| Type              | Case                                             |
+|-------------------|--------------------------------------------------|
+| info              | RabbitMQ successful connection                   |
+| info              | Redis successful connection                      |
+| info              | Section is working                               |
+| warning           | Sensor disconnection                             |
+| critical          | Global client socket timeout                     |
+| critical          | Redis connection error                           |
+
+## Application-side Log Table
 
 | Type             | Group                  | Description                                                                 |
 |------------------|------------------------|-----------------------------------------------------------------------------|
