@@ -106,7 +106,10 @@ if __name__ == "__main__":
                         # TODO:
                         print("Performing barrier application section.")
                     case "rfid":
-                        # TODO:
+                        app_section.queue_route = "logs.rfids"
+                        app_section.queue_namespace_provider = (
+                            "App\\Jobs\\SystemLogs\\RFIDs\\RFIDLog"
+                        )
                         print("Performing rfid application section.")
                     case _:
                         print("[INPUT]: Unknown section")
