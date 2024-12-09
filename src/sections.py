@@ -1,8 +1,6 @@
 from dataclasses import asdict
 import socket, time
 
-from pymongo import MongoClient
-
 from config import config
 from data.models import error_code, Log, AMQPLoggingMessage, SensorsLogging
 from data.controllers import Controllers
@@ -10,20 +8,21 @@ from data import mq
 
 
 class AppSections:
-    connection_string: str
-    conn: str
     message_broker: any = None
     queue_route: str = ""
     queue_namespace_provider: str = ""
+    __sensor_collections: Controllers = None
 
     def __init__(self, ip: str, port: int, building: str, queue_name: str):
         self.ip = ip
         self.port = port
         self.building = building
         self.queue_name = queue_name
-        self.connection_string = MongoClient(config["db"]["mongo"]["connection_string"])
-        self.conn = self.connection_string.MCI_PCR_DB
         self.message_broker = mq.RabbitMQ()
+
+        if self.queue_route == "logs.utlrasonic-sensors":
+            # Mongo controllers
+            self.__sensor_collections = Controllers(building, ip)
 
     def send_event(self, data: dict):
         """Send proper event by payload to RabbitMQ.
@@ -100,63 +99,54 @@ class AppSections:
         + 12:14 was equal to `01`: occupied
         + 0:2 was equal to `00`: sensor is disconnected
         """
-        # Database controllers
-        sensor_collections = Controllers(self.conn, self.building, self.ip)
 
         # Sensors list that exists in a specific floor
-        sensors = sensor_collections.get_sensors()
+        sensors = self.__sensor_collections.get_sensors()
 
-        for _ in range(sensor_collections.get_sensors_count()):
-            sensor_id: str = sensors.next()["id"]
+        for _ in range(self.__sensor_collections.get_sensors_count()):
+            sensor_id: str = sensors[i]["id"]
+
             # Sensor's read command in HEX format
             client.send(
                 f"{sensor_id}{config["client_commands"]["sensor_read"]}".encode()
             )
-            try:
-                sensor_response: str = client.recv(1024).hex()
+            sensor_response: str = client.recv(1024).hex()
 
-                # Initialize `sensor_logging`
-                sensor_logging: SensorsLogging = SensorsLogging(sensor_id, None, None)
+            # Initialize `sensor_logging`
+            sensor_logging: SensorsLogging = SensorsLogging(sensor_id, None, None)
 
-                # Sensor is not connect
-                if sensor_response[0:2] == "00":
+            # Sensor is not connect
+            if sensor_response[0:2] == "00":
+                sensor_logging.message = (
+                    AMQPLoggingMessage(
+                        level=Log.warning.name,
+                        content=error_code["sections"]["warning"][
+                            "sensorsIsDisconnected"
+                        ],
+                    ),
+                )
+                self.send_event(data=asdict(sensor_logging))
+            else:
+                # Slot is free
+                if sensor_response[12:14] == "00":
+                    sensor_logging.status = False
                     sensor_logging.message = (
                         AMQPLoggingMessage(
-                            level=Log.warning.name,
-                            content=error_code["sections"]["warning"][
-                                "sensorsIsDisconnected"
-                            ],
+                            level=Log.info.name,
+                            content=error_code["sections"]["success"]["globalStatus"],
                         ),
                     )
                     self.send_event(data=asdict(sensor_logging))
-                else:
-                    # Slot is free
-                    if sensor_response[12:14] == "00":
-                        sensor_logging.status = False
-                        sensor_logging.message = (
-                            AMQPLoggingMessage(
-                                level=Log.info.name,
-                                content=error_code["sections"]["success"][
-                                    "globalStatus"
-                                ],
-                            ),
-                        )
-                        self.send_event(data=asdict(sensor_logging))
-                    # Slot is occupied
-                    elif sensor_response[12:14] == "01":
-                        sensor_logging.status = True
-                        sensor_logging.message = (
-                            AMQPLoggingMessage(
-                                level=Log.info.name,
-                                content=error_code["sections"]["success"][
-                                    "globalStatus"
-                                ],
-                            ),
-                        )
-                        self.send_event(data=asdict(sensor_logging))
+                # Slot is occupied
+                elif sensor_response[12:14] == "01":
+                    sensor_logging.status = True
+                    sensor_logging.message = (
+                        AMQPLoggingMessage(
+                            level=Log.info.name,
+                            content=error_code["sections"]["success"]["globalStatus"],
+                        ),
+                    )
+                    self.send_event(data=asdict(sensor_logging))
 
-                time.sleep(0.8)
-            except Exception as db_exception:
-                print(f"[MONGODB]: {db_exception}")
-                continue
+            time.sleep(0.8)
         client.close()

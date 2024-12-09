@@ -1,6 +1,17 @@
+from pymongo import MongoClient
+from pymongo.errors import ServerSelectionTimeoutError
+
+from config import config
+
+
 class Controllers:
-    def __init__(self, db_connection, building: str, ip: str):
-        self.db_connection = db_connection
+    def __init__(self, building: str, ip: str):
+        self.db_connection = MongoClient(
+            config["db"]["mongo"]["connection_string"],
+            maxPoolSize=20,
+            minPoolSize=5,
+        )
+        self.conn = self.db_connection.MCI_PCR_DB
         self.building = building
         self.ip = ip
 
