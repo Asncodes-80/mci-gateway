@@ -6,12 +6,12 @@ from config import config
 
 class Controllers:
     def __init__(self, building: str, ip: str):
-        self.db_connection = MongoClient(
+        self.connection_string = MongoClient(
             config["db"]["mongo"]["connection_string"],
             maxPoolSize=20,
             minPoolSize=5,
         )
-        self.conn = self.db_connection.MCI_PCR_DB
+        self.db_connection = self.connection_string.MCI_PCR_DB
         self.building = building
         self.ip = ip
 

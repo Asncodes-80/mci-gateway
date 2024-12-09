@@ -11,7 +11,7 @@ class AppSections:
     message_broker: any = None
     queue_route: str = ""
     queue_namespace_provider: str = ""
-    __sensor_collections: Controllers = None
+    sensor_collections: Controllers
 
     def __init__(self, ip: str, port: int, building: str, queue_name: str):
         self.ip = ip
@@ -20,9 +20,7 @@ class AppSections:
         self.queue_name = queue_name
         self.message_broker = mq.RabbitMQ()
 
-        if self.queue_route == "logs.utlrasonic-sensors":
-            # Mongo controllers
-            self.__sensor_collections = Controllers(building, ip)
+        self.sensor_collections = Controllers(building, ip)
 
     def send_event(self, data: dict):
         """Send proper event by payload to RabbitMQ.
@@ -101,9 +99,9 @@ class AppSections:
         """
 
         # Sensors list that exists in a specific floor
-        sensors = self.__sensor_collections.get_sensors()
+        sensors = self.sensor_collections.get_sensors()
 
-        for _ in range(self.__sensor_collections.get_sensors_count()):
+        for i in range(self.sensor_collections.get_sensors_count()):
             sensor_id: str = sensors[i]["id"]
 
             # Sensor's read command in HEX format
