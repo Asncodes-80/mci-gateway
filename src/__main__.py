@@ -42,6 +42,7 @@ from sections import AppSections
 
 
 if __name__ == "__main__":
+    app_section: AppSections
     try:
         parser = argparse.ArgumentParser(
             prog="MCI Smart Parking Gateway Service Script",
