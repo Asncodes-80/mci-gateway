@@ -1,39 +1,20 @@
-""" Sensor Data Collector Python App Documentations 
+""" Sensor Data Collector Python App Documentations
 
 + Every `id` key is related to (str) `sensor_id`
 + (int) `real_status` is related to status of specific sensor -> `sensor_id`.
 
 ## Server Side Log Table
 
-+ info: Every data that we send over MQ
-+ waning: Minor events like some clients is disconnected.
-+ error: Major events like a part of section encounter to fault.
-+ critical: Critical events like any inside communications.
++ **info**: Every data that we send over MQ -> 1XXX
++ **warning**: Minor events like some clients is disconnected -> 2XXX
++ **error**: Major events like a part of section encounter to fault -> 3XXX
++ **critical**: Critical events like any inside communications -> 4XXX
 
-## Server-side Logs
-
-| Type              | Case                                             |
-|-------------------|--------------------------------------------------|
-| info              | RabbitMQ successful connection                   |
-| info              | Redis successful connection                      |
-| info              | Section is working                               |
-| warning           | Sensor disconnection                             |
-| critical          | Global client socket timeout                     |
-| critical          | Redis connection error                           |
 
 ## Application-side Log Table
 
 | Type             | Group                  | Description                                                                 |
 |------------------|------------------------|-----------------------------------------------------------------------------|
-| NoneType         | Network                | Network is Unreachable                                                      |
-| NoneType         | Implementation         | Object is not subscriptable                                                 |
-| Timeout          | RabbitMQ               | RabbitMQ connection timeout                                                 |
-| Timeout          | Socket                 | [Error 104] Connection reset by peer                                        |
-| CLI Input        | User mode              | Unknown section                                                             |
-| CLI Input        | User mode              | You must enter building number between 1 to {len(config["buildings"])}"     |
-| Connection Error | Service mode           | [AMQPConnectionError]: Please check server configurations. Connection error |
-| Connection Error | Service mode           | [AMQPChannelError]: Wrong Configurations. Fix RabbitMQ Channel.             |
-| Connection Error | Service mode           | RabbitMQ Connection Error                                                   |
 """
 
 import argparse, sys
@@ -90,7 +71,7 @@ if __name__ == "__main__":
                             "App\\Jobs\\SystemLogs\\UltrasonicSensors\\SensorLog"
                         )
 
-                        app_section.data_collector(app_section.sensors)
+                        app_section.socket_connection(app_section.get_sensors_data)
                     case "barrier":
                         # TODO:
                         print("Performing barrier application section.")

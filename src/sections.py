@@ -1,8 +1,10 @@
-import socket, time
+import json, socket, time
 
 from pymongo import MongoClient
 
-from config import config, Log
+from config import config
+from data.models import error_code, Log, AMQPLoggingMessage, SensorsLogging
+from data.controllers import Controllers
 from data import mq
 
 
@@ -18,7 +20,6 @@ class AppSections:
         self.port = port
         self.building = building
         self.queue_name = queue_name
-
         self.connection_string = MongoClient(config["db"]["mongo"]["connection_string"])
         self.conn = self.connection_string.MCI_PCR_DB
         self.message_broker = mq.RabbitMQ()
@@ -32,23 +33,22 @@ class AppSections:
         """
 
         # Final data to send it to RabbitMQ
-        result = {
-            "ip_address": self.ip,
-        }
+        results = {"ip_address": self.ip}
 
+        # Updates `results` from new data dictionary.
         for k, v in data.items():
-            result[k] = v
+            results[k] = v
 
         self.message_broker.produce(
             self.queue_name,
             self.queue_route,
             message=self.message_broker.laravel_based_messaging(
                 namespace=self.queue_namespace_provider,
-                data=result,
+                data=results,
             ),
         )
 
-    def data_collector(self, callback=None):
+    def socket_connection(self, callback=None):
         """Public Data Collector
 
         Args:
@@ -81,8 +81,8 @@ class AppSections:
             except OSError as os_conn_error:
                 print(f"[CONNECTION]: Gateway is not responding. {os_conn_error}")
 
-    def sensors(self, client: socket):
-        """Sensor Data Collection
+    def get_sensors_data(self, client: socket):
+        """Get Sensors Data
 
         # Args:
             client (socket):
@@ -99,58 +99,60 @@ class AppSections:
         + 12:14 was equal to `01`: occupied
         + 0:2 was equal to `00`: sensor is disconnected
         """
-        gateway = self.conn.GateWay.find_one(
-            {"building": self.building, "Status": 1, "ip": self.ip}
-        )
-        # Select a gateway by ip address and get its floor
-        floor: int = gateway["floor"]
-        # Sensors list that exists in a specific floor
-        sensors = self.conn.Slot.find(
-            {"building": self.building, "floor": floor}, sort=[("id", 1)]
-        )
-        sensors_count = self.conn.Slot.count_documents(
-            {"building": self.building, "floor": floor}
-        )
+        # Database controllers
+        sensor_collections = Controllers(self.conn, self.building, self.ip)
 
-        for _ in range(sensors_count):
+        # Sensors list that exists in a specific floor
+        sensors = sensor_collections.get_sensors()
+
+        for _ in range(sensor_collections.get_sensors_count()):
             sensor_id: str = sensors.next()["id"]
             # Sensor's read command in HEX format
             client.send(
                 f"{sensor_id}{config["client_commands"]["sensor_read"]}".encode()
             )
             try:
-                response: str = client.recv(1024).hex()
+                sensor_response: str = client.recv(1024).hex()
+
+                # Initialize `sensor_logging`
+                sensor_logging: SensorsLogging = SensorsLogging(sensor_id, None, None)
 
                 # Sensor is not connect
-                if response[0:2] == "00":
-                    self.send_event(
-                        data={
-                            "sensor_id": sensor_id,
-                            "message": {
-                                "level": Log.warning.name,
-                                "content": None,
-                            },
-                        }
+                if sensor_response[0:2] == "00":
+                    sensor_logging.message = (
+                        AMQPLoggingMessage(
+                            level=Log.warning.name,
+                            content=error_code["sections"]["warning"][
+                                "sensorIsDisconnected"
+                            ],
+                        ),
                     )
+                    self.send_event(data=json.dumps(sensor_logging))
                 else:
                     # Slot is free
-                    if response[12:14] == "00":
-                        self.send_event(
-                            data={
-                                "sensor_id": sensor_id,
-                                "status": False,
-                                "message": None,
-                            }
+                    if sensor_response[12:14] == "00":
+                        sensor_logging.status = False
+                        sensor_logging.message = (
+                            AMQPLoggingMessage(
+                                level=Log.info.name,
+                                content=error_code["sections"]["success"][
+                                    "globalStatus"
+                                ],
+                            ),
                         )
+                        self.send_event(data=json.dumps(sensor_logging))
                     # Slot is occupied
-                    elif response[12:14] == "01":
-                        self.send_event(
-                            data={
-                                "sensor_id": sensor_id,
-                                "status": True,
-                                "message": None,
-                            }
+                    elif sensor_response[12:14] == "01":
+                        sensor_logging.status = True
+                        sensor_logging.message = (
+                            AMQPLoggingMessage(
+                                level=Log.info.name,
+                                content=error_code["sections"]["success"][
+                                    "globalStatus"
+                                ],
+                            ),
                         )
+                        self.send_event(data=json.dumps(sensor_logging))
 
                 time.sleep(0.8)
             except Exception as db_exception:
