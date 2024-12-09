@@ -33,6 +33,7 @@
 | AMQP_TIMEOUT          | RabbitMQ connection timeout.                                           |
 | BROKER                | Channel error {dynamic error}                                          |
 | BROKER                | {channel blocking error}                                               |
+| AMQP_STREAM_LOST      | Transport indicated EOF.                                               |
 
 
 ## Server-side Logs

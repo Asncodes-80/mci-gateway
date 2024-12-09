@@ -1,4 +1,4 @@
-import json
+import json, time
 
 import pika
 from pika.exceptions import (
@@ -6,6 +6,7 @@ from pika.exceptions import (
     AMQPConnectionError,
     AuthenticationError,
     ChannelWrongStateError,
+    StreamLostError,
 )
 import phpserialize3 as phpSerializer
 import uuid_utils as uuid
@@ -42,6 +43,10 @@ class RabbitMQ:
             print("[AMQP_CHANNEL_ERROR]: Wrong Configurations. Fix RabbitMQ Channel.")
         except TimeoutError:
             print("[AMQP_TIMEOUT]: RabbitMQ connection timeout.")
+        except StreamLostError:
+            time.sleep(3)
+            self.connect()
+            print("[AMQP_STREAM_LOST]: Transport indicated EOF.")
         except Exception as e:
             print(f"Unknown error\n{e}")
 
