@@ -13,14 +13,31 @@
 
 ## Application-side Log Table
 
-| Type             | Group                  | Description                                                                 |
-|------------------|------------------------|-----------------------------------------------------------------------------|
+| Error                 | Description                                                            |
+|-----------------------|------------------------------------------------------------------------|
+| INPUT                 | Please enter valid ip address, port number, and an application section |
+| INPUT                 | You must enter building number between 1 to n                          |
+| INPUT                 | Unknown section                                                        |
+| CODE                  | `sections.socket_connection`: Error in callback function.              |
+| SOCKET                | Access is closed.                                                      |
+| SOCKET                | DNS is not exists.                                                     |
+| SOCKET                | The Connection is terminated by one of the parties.                    |
+| SOCKET                | The Connection refused.                                                |
+| SOCKET                | The Connection closed with another gateway.                            |
+| SOCKET                | Connection timeout.                                                    |
+| CONNECTION            | Gateway is not responding.                                             |
+| SOCKET                | The Connection refused.                                                |
+| AMQP_AUTHENTICATION   | Client auth failed.                                                    |
+| AMQP_CONNECTION_ERROR | Please check server configurations. Connection error                   |
+| AMQP_CHANNEL_ERROR    | Wrong Configurations. Fix RabbitMQ Channel.                            |
+| AMQP_TIMEOUT          | RabbitMQ connection timeout.                                           |
+| BROKER                | Channel error {dynamic error}                                          |
+| BROKER                | {channel blocking error}                                               |
 """
 
 import argparse, sys
 
 from config import config
-
 from sections import AppSections
 
 

@@ -33,15 +33,15 @@ class RabbitMQ:
             self.connection = pika.BlockingConnection(parameters)
             self.channel = self.connection.channel()
         except AuthenticationError as auth_error:
-            print(f"[AMQPAUTHENTICATION]: Client auth failed. {auth_error}")
+            print(f"[AMQP_AUTHENTICATION]: Client auth failed. {auth_error}")
         except AMQPConnectionError:
             print(
-                "[AMQPConnectionError]: Please check server configurations. Connection error"
+                "[AMQP_CONNECTION_ERROR]: Please check server configurations. Connection error"
             )
         except AMQPChannelError:
-            print("[AMQPChannelError]: Wrong Configurations. Fix RabbitMQ Channel.")
+            print("[AMQP_CHANNEL_ERROR]: Wrong Configurations. Fix RabbitMQ Channel.")
         except TimeoutError:
-            print("[Timeout]: RabbitMQ connection timeout")
+            print("[AMQP_TIMEOUT]: RabbitMQ connection timeout.")
         except Exception as e:
             print(f"Unknown error\n{e}")
 
