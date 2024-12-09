@@ -33,6 +33,18 @@
 | AMQP_TIMEOUT          | RabbitMQ connection timeout.                                           |
 | BROKER                | Channel error {dynamic error}                                          |
 | BROKER                | {channel blocking error}                                               |
+
+
+## Server-side Logs
+
+| Code | Type              | Case                              |
+|------|-------------------|-----------------------------------|
+| 1101 | info              | RabbitMQ successful connection    |
+| 1201 | info              | Redis successful connection       |
+| 1301 | info              | Section is working                |
+| 2300 | warning           | Sensor disconnection              |
+| 4300 | critical          | Global client socket timeout      |
+| 4000 | critical          | Redis connection error            |
 """
 
 import argparse, sys

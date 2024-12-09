@@ -1,4 +1,5 @@
-import json, socket, time
+from dataclasses import asdict
+import socket, time
 
 from pymongo import MongoClient
 
@@ -123,11 +124,11 @@ class AppSections:
                         AMQPLoggingMessage(
                             level=Log.warning.name,
                             content=error_code["sections"]["warning"][
-                                "sensorIsDisconnected"
+                                "sensorsIsDisconnected"
                             ],
                         ),
                     )
-                    self.send_event(data=json.dumps(sensor_logging))
+                    self.send_event(data=asdict(sensor_logging))
                 else:
                     # Slot is free
                     if sensor_response[12:14] == "00":
@@ -140,7 +141,7 @@ class AppSections:
                                 ],
                             ),
                         )
-                        self.send_event(data=json.dumps(sensor_logging))
+                        self.send_event(data=asdict(sensor_logging))
                     # Slot is occupied
                     elif sensor_response[12:14] == "01":
                         sensor_logging.status = True
@@ -152,7 +153,7 @@ class AppSections:
                                 ],
                             ),
                         )
-                        self.send_event(data=json.dumps(sensor_logging))
+                        self.send_event(data=asdict(sensor_logging))
 
                 time.sleep(0.8)
             except Exception as db_exception:
