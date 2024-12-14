@@ -97,23 +97,34 @@ class AppSections:
         + 12:14 was equal to `01`: occupied
         + 0:2 was equal to `00`: sensor is disconnected
         """
+
+        # Initialize `sensor_logging`
+        sensor_logging: SensorsLogging = SensorsLogging(None, None, None)
+
         while True:
             # Sensors list that exists in a specific floor
             sensors = self.sensor_collections.get_sensors()
 
-            print(type(sensors))
+            # Floor not found for this building name and IP address.
+            if sensors == None:
+                sensor_logging.message = (
+                    AMQPLoggingMessage(
+                        level=Log.critical.name,
+                        content=error_code["sections"]["critical"]["floorNotFound"],
+                    ),
+                )
+                self.send_event(data=asdict(sensor_logging))
+                break
 
             for i in range(self.sensor_collections.get_sensors_count()):
                 sensor_id: str = sensors[i]["id"]
+                sensor_logging.sensor_id = sensor_id
 
                 # Sensor's read command in HEX format
                 client.send(
                     f"{sensor_id}{config["client_commands"]["sensor_read"]}".encode()
                 )
                 sensor_response: str = client.recv(1024).hex()
-
-                # Initialize `sensor_logging`
-                sensor_logging: SensorsLogging = SensorsLogging(sensor_id, None, None)
 
                 # Sensor is not connect
                 if sensor_response[0:2] == "00":
