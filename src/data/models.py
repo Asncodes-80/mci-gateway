@@ -39,6 +39,7 @@ error_code: dict[str, dict[str, int]] = {
         },
         "critical": {
             "socketTimeout": 4300,
+            "floorNotFound": 4301,
         },
     },
 }

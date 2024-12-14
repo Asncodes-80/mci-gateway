@@ -1,5 +1,4 @@
 """ Sensor Data Collector Python App Documentations
-
 + Every `id` key is related to (str) `sensor_id`
 + (int) `real_status` is related to status of specific sensor -> `sensor_id`.
 
@@ -34,21 +33,23 @@
 | BROKER                | Channel error {dynamic error}                                          |
 | BROKER                | {channel blocking error}                                               |
 | AMQP_STREAM_LOST      | Transport indicated EOF.                                               |
-| MONGODB               | Mongodb connection error                                               |
 | MONGODB               | Server not available                                                   |
 | MONGODB               | Config error                                                           |
 | MONGODB               | Invalid operation to find entered floor number.                        |
+| SENSORS               | Floor not found for this building name and IP address.                 |
 
 ## Server-side Logs
 
-| Code | Type              | Case                              |
-|------|-------------------|-----------------------------------|
-| 1101 | info              | RabbitMQ successful connection    |
-| 1201 | info              | Redis successful connection       |
-| 1301 | info              | Section is working                |
-| 2300 | warning           | Sensor disconnection              |
-| 4300 | critical          | Global client socket timeout      |
-| 4000 | critical          | Redis connection error            |
+| Code | Type              | Case                                                |
+|------|-------------------|-----------------------------------------------------|
+| 1101 | info              | RabbitMQ successful connection                      |
+| 1201 | info              | Redis successful connection                         |
+| 1301 | info              | Section is working                                  |
+| 2300 | warning           | Sensor disconnection                                |
+| 4300 | critical          | Global client socket timeout                        |
+| 4000 | critical          | Redis connection error                              |
+| 4000 | critical          | Redis connection error                              |
+| 4301 | critical          | Floor not found with this building and IP address   |
 """
 
 import argparse, sys
