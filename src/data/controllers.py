@@ -1,6 +1,5 @@
 from pymongo import MongoClient
 from pymongo.errors import (
-    ConnectionError,
     ServerSelectionTimeoutError,
     ConfigurationError,
     InvalidOperation,
@@ -21,8 +20,6 @@ class Controllers:
                 minPoolSize=5,
             )
             self.db_connection = self.connection_string.MCI_PCR_DB
-        except ConnectionError:
-            print("[MONGODB]: Mongodb connection error")
         except ServerSelectionTimeoutError:
             print("[MONGODB]: Server not available")
         except ConfigurationError:
@@ -35,25 +32,31 @@ class Controllers:
             gateway = self.db_connection.GateWay.find_one(
                 {"building": self.building, "Status": 1, "ip": self.ip}
             )
-
-            return gateway["floor"]
+            return gateway.get("floor") if gateway else None
         except InvalidOperation:
             print("[MONGODB]: Invalid operation to find entered floor number.")
         except Exception as e:
             print(e)
 
-        return 0
-
     def get_sensors(self):
-        return self.db_connection.Slot.find(
-            {
-                "building": self.building,
-                "floor": self.get_floors(),
-            },
-            sort=[("id", 1)],
-        )
+        if self.get_floors() == None:
+            print("[SENSOR]: Floor not found for this building name and IP address.")
+        else:
+            return self.db_connection.Slot.find(
+                {
+                    "building": self.building,
+                    "floor": self.get_floors(),
+                },
+                sort=[("id", 1)],
+            )
 
-    def get_sensors_count(self):
-        return self.db_connection.Slot.count_documents(
-            {"building": self.building, "floor": self.get_floors()}
-        )
+    def get_sensors_count(self) -> int:
+        if self.get_floors() == None:
+            print("[SENSOR]: Floor not found for this building name and IP address.")
+        else:
+            try:
+                return self.db_connection.Slot.count_documents(
+                    {"building": self.building, "floor": self.get_floors()}
+                )
+            except:
+                return 0
