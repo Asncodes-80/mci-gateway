@@ -34,7 +34,10 @@
 | BROKER                | Channel error {dynamic error}                                          |
 | BROKER                | {channel blocking error}                                               |
 | AMQP_STREAM_LOST      | Transport indicated EOF.                                               |
-
+| MONGODB               | Mongodb connection error                                               |
+| MONGODB               | Server not available                                                   |
+| MONGODB               | Config error                                                           |
+| MONGODB               | Invalid operation to find entered floor number.                        |
 
 ## Server-side Logs
 

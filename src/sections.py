@@ -53,31 +53,31 @@ class AppSections:
             callback (client: socket): Call `sensors`, `barriers`, `rfids` and
             other client's function here.
         """
-        while True:
-            try:
-                client: socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client.connect((self.ip, self.port))
-                client.settimeout(2)
+        # while True:
+        try:
+            client: socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.connect((self.ip, self.port))
+            client.settimeout(2)
 
-                if callback:
-                    callback(client)
-                else:
-                    raise Exception("[CODE]: Error in callback function.")
+            if callback:
+                callback(client)
+            else:
+                raise Exception("[CODE]: Error in callback function.")
 
-            except socket.error:
-                print("[SOCKET]: Access is closed.")
-            except socket.gaierror:
-                print("[SOCKET]: DNS is not exists.")
-            except ConnectionAbortedError:
-                print("[SOCKET]: The Connection is terminated by one of the parties.")
-            except ConnectionRefusedError:
-                print("[SOCKET]: The Connection refused.")
-            except ConnectionResetError:
-                print("[SOCKET]: The Connection closed with another gateway.")
-            except socket.timeout:
-                print("[SOCKET]: Connection timeout")
-            except OSError as os_conn_error:
-                print(f"[CONNECTION]: Gateway is not responding. {os_conn_error}")
+        except socket.error:
+            print("[SOCKET]: Access is closed.")
+        except socket.gaierror:
+            print("[SOCKET]: DNS is not exists.")
+        except ConnectionAbortedError:
+            print("[SOCKET]: The Connection is terminated by one of the parties.")
+        except ConnectionRefusedError:
+            print("[SOCKET]: The Connection refused.")
+        except ConnectionResetError:
+            print("[SOCKET]: The Connection closed with another gateway.")
+        except socket.timeout:
+            print("[SOCKET]: Connection timeout")
+        except OSError as os_conn_error:
+            print(f"[CONNECTION]: Gateway is not responding. {os_conn_error}")
 
     def get_sensors_data(self, client: socket):
         """Get Sensors Data
@@ -97,54 +97,59 @@ class AppSections:
         + 12:14 was equal to `01`: occupied
         + 0:2 was equal to `00`: sensor is disconnected
         """
+        while True:
+            # Sensors list that exists in a specific floor
+            sensors = self.sensor_collections.get_sensors()
 
-        # Sensors list that exists in a specific floor
-        sensors = self.sensor_collections.get_sensors()
+            print(type(sensors))
 
-        for i in range(self.sensor_collections.get_sensors_count()):
-            sensor_id: str = sensors[i]["id"]
+            for i in range(self.sensor_collections.get_sensors_count()):
+                sensor_id: str = sensors[i]["id"]
 
-            # Sensor's read command in HEX format
-            client.send(
-                f"{sensor_id}{config["client_commands"]["sensor_read"]}".encode()
-            )
-            sensor_response: str = client.recv(1024).hex()
-
-            # Initialize `sensor_logging`
-            sensor_logging: SensorsLogging = SensorsLogging(sensor_id, None, None)
-
-            # Sensor is not connect
-            if sensor_response[0:2] == "00":
-                sensor_logging.message = (
-                    AMQPLoggingMessage(
-                        level=Log.warning.name,
-                        content=error_code["sections"]["warning"][
-                            "sensorsIsDisconnected"
-                        ],
-                    ),
+                # Sensor's read command in HEX format
+                client.send(
+                    f"{sensor_id}{config["client_commands"]["sensor_read"]}".encode()
                 )
-                self.send_event(data=asdict(sensor_logging))
-            else:
-                # Slot is free
-                if sensor_response[12:14] == "00":
-                    sensor_logging.status = False
-                    sensor_logging.message = (
-                        AMQPLoggingMessage(
-                            level=Log.info.name,
-                            content=error_code["sections"]["success"]["globalStatus"],
-                        ),
-                    )
-                    self.send_event(data=asdict(sensor_logging))
-                # Slot is occupied
-                elif sensor_response[12:14] == "01":
-                    sensor_logging.status = True
-                    sensor_logging.message = (
-                        AMQPLoggingMessage(
-                            level=Log.info.name,
-                            content=error_code["sections"]["success"]["globalStatus"],
-                        ),
-                    )
-                    self.send_event(data=asdict(sensor_logging))
+                sensor_response: str = client.recv(1024).hex()
 
-            time.sleep(0.8)
-        client.close()
+                # Initialize `sensor_logging`
+                sensor_logging: SensorsLogging = SensorsLogging(sensor_id, None, None)
+
+                # Sensor is not connect
+                if sensor_response[0:2] == "00":
+                    sensor_logging.message = (
+                        AMQPLoggingMessage(
+                            level=Log.warning.name,
+                            content=error_code["sections"]["warning"][
+                                "sensorsIsDisconnected"
+                            ],
+                        ),
+                    )
+                    self.send_event(data=asdict(sensor_logging))
+                else:
+                    # Slot is free
+                    if sensor_response[12:14] == "00":
+                        sensor_logging.status = False
+                        sensor_logging.message = (
+                            AMQPLoggingMessage(
+                                level=Log.info.name,
+                                content=error_code["sections"]["success"][
+                                    "globalStatus"
+                                ],
+                            ),
+                        )
+                        self.send_event(data=asdict(sensor_logging))
+                    # Slot is occupied
+                    elif sensor_response[12:14] == "01":
+                        sensor_logging.status = True
+                        sensor_logging.message = (
+                            AMQPLoggingMessage(
+                                level=Log.info.name,
+                                content=error_code["sections"]["success"][
+                                    "globalStatus"
+                                ],
+                            ),
+                        )
+                        self.send_event(data=asdict(sensor_logging))
+
+                time.sleep(0.8)
